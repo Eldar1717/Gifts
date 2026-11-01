@@ -35,7 +35,7 @@ import {
   StarIcon,
 } from "../components/ui";
 import { formatDate, formatNumber, relativeTime } from "../lib/format";
-import { haptic, hapticNotification, isTelegram, openTelegramLink, selectionHaptic } from "../lib/telegram";
+import { haptic, hapticNotification, isTelegram, selectionHaptic } from "../lib/telegram";
 import { useToast } from "../context/ToastContext";
 
 export default function ProfilePage() {
@@ -635,12 +635,9 @@ function DemoIdentityCard() {
         </button>
       </div>
       <p className="mt-1.5 text-[10px] text-gold/70">Текущий аккаунт: {me?.user.telegram_id}</p>
-      <button
-        onClick={() => openTelegramLink("https://t.me/")}
-        className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-gold/70"
-      >
-        <LogOut size={10} /> В Telegram доступ закрыт без initData
-      </button>
+      <p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-gold/70">
+        <LogOut size={10} /> Внутри Telegram тестовый заголовок не отправляется
+      </p>
     </div>
   );
 }

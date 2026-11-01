@@ -57,6 +57,15 @@ export function useOwnedCollection() {
   return useQuery({ queryKey: ["owned"], queryFn: api.collection_owned, staleTime: 10_000 });
 }
 
+export function useOwnership(id: number | null) {
+  return useQuery({
+    queryKey: ["ownership", id],
+    queryFn: () => api.ownership(id as number),
+    enabled: id !== null,
+    staleTime: 10_000,
+  });
+}
+
 export function useFavorites() {
   return useQuery({ queryKey: ["favorites"], queryFn: api.favorites, staleTime: 10_000 });
 }

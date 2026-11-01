@@ -214,7 +214,7 @@ export default function ItemDetailPage({ mode }: { mode: "item" | "listing" }) {
       <div className="-mt-1 space-y-4 px-4 pt-3">
         <div>
           <Link
-            to={`/collection/${data.item.collection.slug}`}
+            to={`/collections/${data.item.collection.slug}`}
             className="inline-flex items-center gap-1 text-[11.5px] font-bold uppercase tracking-[0.12em]"
             style={{ color: data.item.collection.accent }}
           >

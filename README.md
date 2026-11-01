@@ -165,7 +165,7 @@ alembic revision --autogenerate -m "change"   # новая миграция
 
 # frontend
 npm run typecheck                    # tsc --noEmit
-npm test                             # 23 теста (vitest)
+npm test                             # 26 тестов (vitest)
 npm run build                        # production-сборка в dist/
 npm run preview                      # предпросмотр сборки на 4173
 ```
@@ -253,7 +253,7 @@ Telegram ID (например, `900000002`). Значение хранится �
 | Набор | Команда | Результат |
 |---|---|---|
 | Backend: безопасность, комиссия, касса, лоты, выплаты, админка | `cd backend && pytest -q` | **34 passed** |
-| Frontend: форматирование денег/дат, API-клиент, ошибки | `cd frontend && npm test` | **23 passed** |
+| Frontend: форматирование, API-клиент, ошибки, карточки лотов | `cd frontend && npm test` | **26 passed** |
 | Backend-линтер | `cd backend && ruff check app tests seed.py` | clean |
 | Frontend-типы и сборка | `cd frontend && npm run typecheck && npm run build` | clean |
 

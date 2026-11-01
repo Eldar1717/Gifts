@@ -1,10 +1,22 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Layers, Loader2, PackageOpen, Tag, TrendingUp, Wallet } from "lucide-react";
-import { useInvalidateMarket, useOwnedCollection, useConfig } from "../hooks/useApi";
+import { ArrowUpRight, History, Layers, Loader2, PackageOpen, Tag, TrendingUp, User, Wallet } from "lucide-react";
+import { useConfig, useInvalidateMarket, useOwnedCollection, useOwnership } from "../hooks/useApi";
 import { api, errorMessage } from "../lib/api";
 import type { OwnershipCard } from "../lib/types";
-import { EmptyState, ErrorState, Price, Segmented, Sheet, Skeleton, Spinner, StarIcon } from "../components/ui";
+import type { Rarity } from "../lib/types";
+import {
+  EmptyState,
+  ErrorState,
+  Price,
+  RarityBadge,
+  Segmented,
+  Sheet,
+  Skeleton,
+  SmartImage,
+  Spinner,
+  StarIcon,
+} from "../components/ui";
 import { OwnedGiftCard } from "../components/GiftCard";
 import { formatDate, formatNumber, splitAmount } from "../lib/format";
 import { hapticNotification, selectionHaptic } from "../lib/telegram";
@@ -17,6 +29,7 @@ export default function CollectionPage() {
   const { data: config } = useConfig();
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<OwnershipCard | null>(null);
+  const [detail, setDetail] = useState<OwnershipCard | null>(null);
 
   const items = useMemo(() => {
     const list = data ?? [];
@@ -96,7 +109,7 @@ export default function CollectionPage() {
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {items.map((item, index) => (
-            <OwnedGiftCard key={item.id} ownership={item} index={index} onSelect={setSelected} />
+            <OwnedGiftCard key={item.id} ownership={item} index={index} onSelect={setDetail} />
           ))}
         </div>
       )}
@@ -109,6 +122,15 @@ export default function CollectionPage() {
         уведомление о продаже. Комиссия платформы — {config?.commission_percent ?? 10}%, остальное зачисляется на
         внутренний баланс продавца.
       </div>
+
+      <OwnershipSheet
+        ownership={detail}
+        onClose={() => setDetail(null)}
+        onSell={() => {
+          setSelected(detail);
+          setDetail(null);
+        }}
+      />
 
       <SellSheet ownership={selected} onClose={() => setSelected(null)} />
 
@@ -305,6 +327,157 @@ function SellSheet({ ownership, onClose }: { ownership: OwnershipCard | null; on
           >
             <Layers size={12} /> Мои лоты и сделки
           </Link>
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+const ACQUISITION_LABEL: Record<string, string> = {
+  primary: "Куплен при выпуске",
+  resale: "Куплен на маркете",
+  admin_grant: "Выдан платформой",
+};
+
+const EVENT_LABEL: Record<string, string> = {
+  mint: "Выпуск",
+  resale: "Перепродажа",
+  admin_grant: "Выдача",
+  transfer: "Передача",
+};
+
+/** Full ownership card: serial, acquisition details, previous owners, price history. */
+function OwnershipSheet({
+  ownership,
+  onClose,
+  onSell,
+}: {
+  ownership: OwnershipCard | null;
+  onClose: () => void;
+  onSell: () => void;
+}) {
+  const { data, isLoading } = useOwnership(ownership?.id ?? null);
+  const previousOwners = (data?.history ?? []).filter((entry) => entry.from);
+  const listing = ownership?.listing ?? null;
+
+  return (
+    <Sheet open={Boolean(ownership)} onClose={onClose} title="Предмет в коллекции">
+      {ownership && (
+        <div className="space-y-3 pb-2">
+          <div className="flex gap-3">
+            <SmartImage
+              src={ownership.item.image_url}
+              alt={ownership.item.name}
+              glow={ownership.item.glow}
+              className="h-[92px] w-[76px] shrink-0 rounded-2xl"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <RarityBadge rarity={ownership.item.rarity as Rarity} />
+                {ownership.serial_number !== null && (
+                  <span className="chip !px-2 !py-0.5 text-[9.5px]">#{ownership.serial_number}</span>
+                )}
+              </div>
+              <p className="mt-1 truncate text-[15px] font-extrabold">{ownership.item.name}</p>
+              <p className="truncate text-[11px] text-muted">{ownership.item.collection.name}</p>
+              <div className="mt-1.5">
+                <Price value={ownership.estimated_value_stars ?? ownership.item.primary_price_stars} size="sm" />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="rounded-2xl border border-line bg-white/[0.03] p-2.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-muted-2">Получен</p>
+              <p className="mt-1 font-bold">{formatDate(ownership.acquired_at)}</p>
+            </div>
+            <div className="rounded-2xl border border-line bg-white/[0.03] p-2.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-muted-2">Способ</p>
+              <p className="mt-1 font-bold">
+                {ACQUISITION_LABEL[ownership.acquisition_type] ?? ownership.acquisition_type}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-line bg-white/[0.03] p-2.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-muted-2">Тираж</p>
+              <p className="mt-1 font-bold">
+                {ownership.item.minted_count} / {ownership.item.edition_size}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-line bg-white/[0.03] p-2.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-muted-2">Статус</p>
+              <p className="mt-1 font-bold">
+                {listing
+                  ? listing.status === "reserved"
+                    ? "Резерв покупателя"
+                    : "На продаже"
+                  : "В коллекции"}
+              </p>
+            </div>
+          </div>
+
+          {listing && (
+            <div className="flex items-center justify-between rounded-2xl border border-violet/30 bg-violet/[0.08] px-3 py-2.5">
+              <span className="text-[11.5px] text-muted">Цена лота</span>
+              <Price value={listing.price_stars} size="sm" />
+            </div>
+          )}
+
+          <div>
+            <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-2">
+              <History size={11} /> История владения
+            </p>
+            {isLoading ? (
+              <Skeleton className="h-14 rounded-2xl" />
+            ) : (data?.history.length ?? 0) === 0 ? (
+              <p className="text-[11px] text-muted-2">История появится после первой передачи предмета.</p>
+            ) : (
+              <ol className="space-y-1.5">
+                {(data?.history ?? []).map((entry, index) => (
+                  <li
+                    key={`${entry.created_at}-${index}`}
+                    className="flex items-start gap-2 rounded-2xl border border-line bg-white/[0.02] px-2.5 py-2"
+                  >
+                    <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/6 text-muted">
+                      <User size={12} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11.5px] font-bold">
+                        {entry.from ? entry.from.display_name : "GIFT MARKET"} → {entry.to.display_name}
+                      </p>
+                      <p className="text-[10px] text-muted-2">
+                        {EVENT_LABEL[entry.event] ?? entry.event} · {formatDate(entry.created_at, true)}
+                        {entry.price_stars > 0 && ` · ${formatNumber(entry.price_stars)} ★`}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {previousOwners.length > 0 && (
+              <p className="mt-1.5 text-[10px] text-muted-2">
+                Прошлых владельцев: {formatNumber(previousOwners.length)}
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button className="btn btn-primary flex-1" onClick={onSell} disabled={!ownership.can_list}>
+              <Tag size={15} /> {listing ? "Управлять лотом" : "Выставить на продажу"}
+            </button>
+            <Link
+              to={`/gift/${ownership.item.id}`}
+              onClick={onClose}
+              className="btn btn-ghost"
+              aria-label="Открыть карточку предмета"
+            >
+              <ArrowUpRight size={16} />
+            </Link>
+          </div>
+          {!ownership.can_list && (
+            <p className="text-[10.5px] leading-relaxed text-muted-2">
+              Предмет нельзя выставить: он участвует в активной сделке или торговля по нему ограничена.
+            </p>
+          )}
         </div>
       )}
     </Sheet>

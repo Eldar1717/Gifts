@@ -169,7 +169,7 @@ export default function HomePage() {
             {data.rare_collections.map((collection) => (
               <Link
                 key={collection.id}
-                to={`/collection/${collection.slug}`}
+                to={`/collections/${collection.slug}`}
                 onClick={() => haptic("light")}
                 className="flex items-center gap-3 rounded-2xl border border-line bg-white/[0.03] p-2.5 active:scale-[0.99]"
               >

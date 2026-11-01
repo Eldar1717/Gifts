@@ -111,7 +111,7 @@ export default function App() {
                     }
                   />
                   <Route
-                    path="/collection/:slug"
+                    path="/collections/:slug"
                     element={
                       <ScrollReset>
                         <CollectionDetailPage />
