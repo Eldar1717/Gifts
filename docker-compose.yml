@@ -1,0 +1,54 @@
+# GIFT MARKET — full local / single-host stack.
+#
+#   cp backend/.env.example backend/.env   # then edit secrets
+#   docker compose up --build -d
+#
+# The web app is exposed on http://localhost:8080, the API on http://localhost:8000.
+# PostgreSQL data lives in the named volume `pgdata` (persistent).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gift}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gift}
+      POSTGRES_DB: ${POSTGRES_DB:-giftmarket}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gift} -d ${POSTGRES_DB:-giftmarket}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      ENV: ${ENV:-production}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-gift}:${POSTGRES_PASSWORD:-gift}@db:5432/${POSTGRES_DB:-giftmarket}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+    ports:
+      - "8000:8000"
+
+  web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
