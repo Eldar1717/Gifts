@@ -1,0 +1,40 @@
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# --- Node ----------------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- Environment & secrets ----------------------------------------------
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+!backend/.env.example
+*.pem
+*.key
+
+# --- Database / local runtime -------------------------------------------
+*.sqlite3
+*.db
+backend/data/
+pgdata/
+postgres-data/
+
+# --- Editors / OS --------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
